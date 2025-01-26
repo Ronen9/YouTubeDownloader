@@ -40,15 +40,15 @@ def download_youtube_audio(video_url):
                 'preferredquality': '192',
             }],
             'outtmpl': 'audio.%(ext)s',
-            'quiet': True,
-            'no_warnings': True,
+            'quiet': False,  # Enable output for debugging
+            'no_warnings': False,  # Enable warnings for debugging
             'extract_flat': False,
             'no_check_certificates': True,
             'ignoreerrors': False,
             'nocheckcertificate': True,
             'extractor_retries': 3,
             'socket_timeout': 30,
-            'cookiesfrombrowser': ('chrome',),  # Use Chrome cookies
+            'format': 'bestaudio/best',
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
