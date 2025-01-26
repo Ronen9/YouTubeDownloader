@@ -49,17 +49,32 @@ def download_youtube_audio(video_url):
             'extractor_retries': 3,
             'socket_timeout': 30,
             'format': 'bestaudio/best',
+            'age_limit': 0,
+            'youtube_include_dash_manifest': False,
+            'geo_bypass': True,
+            'geo_bypass_country': 'IL',
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-us,en;q=0.5',
-                'Sec-Fetch-Mode': 'navigate'
+                'Sec-Fetch-Mode': 'navigate',
+                'Referer': 'https://www.youtube.com/'
             }
         }
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print("Starting download...")  # Debug log
-            info = ydl.extract_info(video_url, download=True)
+            # Try to extract video ID and use alternative URL format
+            video_id = video_url.split('v=')[-1].split('&')[0]
+            alt_url = f'https://www.youtube.com/embed/{video_id}'
+            print(f"Trying alternative URL: {alt_url}")  # Debug log
+            
+            try:
+                info = ydl.extract_info(alt_url, download=True)
+            except:
+                print("Falling back to original URL")  # Debug log
+                info = ydl.extract_info(video_url, download=True)
+                
             audio_path = os.path.join(temp_dir, 'audio.mp3')
             print(f"Download complete. File exists: {os.path.exists(audio_path)}")  # Debug log
             
