@@ -50,9 +50,7 @@ def download_youtube_audio(video_url):
             'age_limit': 0,
             'youtube_include_dash_manifest': False,
             'geo_bypass': True,
-            'geo_bypass_country': 'IL',
-            'source_address': '0.0.0.0',
-            'force_ipv4': True,
+            'no_playlist': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -64,23 +62,8 @@ def download_youtube_audio(video_url):
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print("Starting download...")
-            video_id = video_url.split('v=')[-1].split('&')[0]
-            alt_url = f'https://www.youtube.com/embed/{video_id}'
-            print(f"Trying alternative URL: {alt_url}")
-            
-            try:
-                info = ydl.extract_info(alt_url, download=True)
-            except Exception as e1:
-                print(f"Embed URL failed: {str(e1)}")
-                print("Falling back to original URL")
-                try:
-                    info = ydl.extract_info(video_url, download=True)
-                except Exception as e2:
-                    print(f"Original URL failed: {str(e2)}")
-                    mobile_url = f'https://m.youtube.com/watch?v={video_id}'
-                    print(f"Trying mobile URL: {mobile_url}")
-                    info = ydl.extract_info(mobile_url, download=True)
-                
+            info = ydl.extract_info(video_url, download=True)
+        
         audio_path = os.path.join(temp_dir, 'audio.mp3')
         print(f"Download complete. File exists: {os.path.exists(audio_path)}")
         
