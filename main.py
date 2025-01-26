@@ -13,6 +13,10 @@ app = Flask(__name__)
 # Load environment variables
 load_dotenv()
 
+# Verify required environment variables
+if not os.environ.get("REPLICATE_API_KEY"):
+    print("WARNING: REPLICATE_API_KEY is not set. The API will not work without it.")
+
 def format_hebrew_text(text):
     """Format Hebrew text with proper RTL alignment."""
     if not text:
@@ -24,9 +28,10 @@ def format_hebrew_text(text):
 def download_youtube_audio(video_url):
     """Download audio from YouTube using yt-dlp."""
     temp_dir = tempfile.mkdtemp()
-    os.chdir(temp_dir)
+    original_dir = os.getcwd()
     
     try:
+        os.chdir(temp_dir)
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -36,7 +41,15 @@ def download_youtube_audio(video_url):
             }],
             'outtmpl': 'audio.%(ext)s',
             'quiet': True,
-            'no_warnings': True
+            'no_warnings': True,
+            'extract_flat': False,
+            'no_check_certificates': True,
+            'ignoreerrors': False,
+            'cookiefile': None,
+            'nocheckcertificate': True,
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -49,18 +62,25 @@ def download_youtube_audio(video_url):
             return info, audio_path, temp_dir
             
     except Exception as e:
-        if os.path.exists(temp_dir):
-            try:
-                for file in os.listdir(temp_dir):
-                    os.remove(os.path.join(temp_dir, file))
-                os.rmdir(temp_dir)
-            except:
-                pass
-        raise e
+        raise Exception(f"YouTube download error: {str(e)}")
+    finally:
+        os.chdir(original_dir)
+
+def cleanup_temp_dir(temp_dir):
+    """Safely cleanup temporary directory."""
+    if temp_dir and os.path.exists(temp_dir):
+        try:
+            for file in os.listdir(temp_dir):
+                file_path = os.path.join(temp_dir, file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            os.rmdir(temp_dir)
+        except Exception as e:
+            print(f"Warning: Failed to cleanup temp directory: {str(e)}")
 
 def transcribe_audio(audio_file_path):
     """Transcribe audio using Replicate's Whisper API."""
-    if not os.environ.get("REPLICATE_API_TOKEN"):
+    if not os.environ.get("REPLICATE_API_KEY"):
         raise ValueError("REPLICATE_API_TOKEN environment variable is not set")
     
     try:
@@ -98,6 +118,9 @@ def transcribe_audio(audio_file_path):
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_endpoint():
     """API endpoint for transcription."""
+    if not os.environ.get("REPLICATE_API_KEY"):
+        return jsonify({'error': 'REPLICATE_API_KEY environment variable is not set'}), 500
+        
     try:
         # Get request data
         data = request.get_json()
@@ -105,10 +128,7 @@ def transcribe_endpoint():
             return jsonify({'error': 'YouTube URL is required'}), 400
             
         youtube_url = data['url']
-        
-        # Process the video
         temp_dir = None
-        original_dir = os.getcwd()
         
         try:
             # Download and transcribe
@@ -123,20 +143,17 @@ def transcribe_endpoint():
             })
                     
         finally:
-            # Cleanup
-            os.chdir(original_dir)
-            if temp_dir and os.path.exists(temp_dir):
-                try:
-                    for file in os.listdir(temp_dir):
-                        file_path = os.path.join(temp_dir, file)
-                        if os.path.exists(file_path):
-                            os.remove(file_path)
-                    os.rmdir(temp_dir)
-                except:
-                    pass
+            # Cleanup using the dedicated function
+            if temp_dir:
+                cleanup_temp_dir(temp_dir)
                     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for Render."""
+    return jsonify({'status': 'healthy'}), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
