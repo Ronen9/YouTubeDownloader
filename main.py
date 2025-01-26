@@ -53,6 +53,9 @@ def download_youtube_audio(video_url):
             'youtube_include_dash_manifest': False,
             'geo_bypass': True,
             'geo_bypass_country': 'IL',
+            'proxy': 'https://proxy.scrapeops.io/v1/',  # Free proxy service
+            'source_address': '0.0.0.0',
+            'force_ipv4': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -71,9 +74,17 @@ def download_youtube_audio(video_url):
             
             try:
                 info = ydl.extract_info(alt_url, download=True)
-            except:
+            except Exception as e1:
+                print(f"Embed URL failed: {str(e1)}")  # Debug log
                 print("Falling back to original URL")  # Debug log
-                info = ydl.extract_info(video_url, download=True)
+                try:
+                    info = ydl.extract_info(video_url, download=True)
+                except Exception as e2:
+                    print(f"Original URL failed: {str(e2)}")  # Debug log
+                    # Try one more time with mobile URL
+                    mobile_url = f'https://m.youtube.com/watch?v={video_id}'
+                    print(f"Trying mobile URL: {mobile_url}")  # Debug log
+                    info = ydl.extract_info(mobile_url, download=True)
                 
             audio_path = os.path.join(temp_dir, 'audio.mp3')
             print(f"Download complete. File exists: {os.path.exists(audio_path)}")  # Debug log
