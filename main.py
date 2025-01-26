@@ -45,10 +45,10 @@ def download_youtube_audio(video_url):
             'extract_flat': False,
             'no_check_certificates': True,
             'ignoreerrors': False,
-            'cookiefile': None,
             'nocheckcertificate': True,
             'extractor_retries': 3,
             'socket_timeout': 30,
+            'cookiesfrombrowser': ('chrome',),  # Use Chrome cookies
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -56,13 +56,6 @@ def download_youtube_audio(video_url):
                 'Sec-Fetch-Mode': 'navigate'
             }
         }
-        
-        # Update yt-dlp before downloading
-        try:
-            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-                ydl.update()
-        except:
-            pass  # Ignore update errors
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print("Starting download...")  # Debug log
