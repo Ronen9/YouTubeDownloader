@@ -47,14 +47,28 @@ def download_youtube_audio(video_url):
             'ignoreerrors': False,
             'cookiefile': None,
             'nocheckcertificate': True,
+            'extractor_retries': 3,
+            'socket_timeout': 30,
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-us,en;q=0.5',
+                'Sec-Fetch-Mode': 'navigate'
             }
         }
         
+        # Update yt-dlp before downloading
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                ydl.update()
+        except:
+            pass  # Ignore update errors
+            
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            print("Starting download...")  # Debug log
             info = ydl.extract_info(video_url, download=True)
             audio_path = os.path.join(temp_dir, 'audio.mp3')
+            print(f"Download complete. File exists: {os.path.exists(audio_path)}")  # Debug log
             
             if not os.path.exists(audio_path):
                 raise Exception("Failed to download audio")
@@ -62,6 +76,7 @@ def download_youtube_audio(video_url):
             return info, audio_path, temp_dir
             
     except Exception as e:
+        print(f"Download error details: {str(e)}")  # Debug log
         raise Exception(f"YouTube download error: {str(e)}")
     finally:
         os.chdir(original_dir)
